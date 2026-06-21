@@ -1,4 +1,5 @@
 import { type FC } from 'react'
+import { Droppable, Draggable } from '@hello-pangea/dnd'
 import { GrSubtract } from 'react-icons/gr'
 import Task from '../Task/Task'
 import ActionButton from '../ActionButton/ActionButton'
@@ -53,21 +54,41 @@ const List: FC<TListProps> = ({
           onClick={() => handleListDelete(list.listId)}
         />
       </div>
-      {list.tasks.map((task, index) => (
-        <div
-          onClick={()=> handleTaskChange(boardId, list.listId, task)}
-          key={task.taskId}
-        >
-        <Task
-          taskName={task.taskName}
-          taskDescription={task.taskDescription}
-          boardId={boardId}
-          id={task.taskId}
-          index={index}
-        />
-        </div>
-      ))}
-      <ActionButton 
+      <Droppable droppableId={list.listId}>
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {list.tasks.map((task, index) => (
+              <Draggable
+                draggableId={task.taskId}
+                index={index}
+                key={task.taskId}
+              >
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    onClick={() => handleTaskChange(boardId, list.listId, task)}
+                  >
+                    <Task
+                      taskName={task.taskName}
+                      taskDescription={task.taskDescription}
+                      boardId={boardId}
+                      id={task.taskId}
+                      index={index}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+      <ActionButton
         boardId={boardId} 
         listId={list.listId}
       />

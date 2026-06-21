@@ -36,6 +36,15 @@ type TDeleteBoardAction = {
     boardId: string;
 }
 
+type TSortAction = {
+    boardId: string;
+    droppableIdStart: string;
+    droppableIdEnd: string;
+    droppableIndexStart: number;
+    droppableIndexEnd: number;
+    draggableId: string;
+}
+
 
 const initialState : TBoardsState = {
     modalActive: false,
@@ -94,28 +103,20 @@ const boardsSlice = createSlice({
         },
 
         addList: (state, {payload} : PayloadAction<TAddListAction>) => {
-            state.boardArray.map(board =>
-                board.boardId === payload.boardId
-                ? {...board, lists: board.lists.push(payload.list)}
-                : board
+            const board = state.boardArray.find(
+                board => board.boardId === payload.boardId
             )
+            board?.lists.push(payload.list);
         },
 
         addTask: (state, {payload} : PayloadAction<TAddTaskAction>) => {
-            state.boardArray.map(board =>
-                board.boardId === payload.boardId
-                ? {
-                    ...board,
-                    list: board.lists.map(list =>
-                        list.listId === payload.listId
-                        ? {
-                            ...list, 
-                            tasks: list.tasks.push(payload.task)
-                        }
-                        : list
-                    )
-                } : board
+            const board = state.boardArray.find(
+                board => board.boardId === payload.boardId
             )
+            const list = board?.lists.find(
+                list => list.listId === payload.listId
+            )
+            list?.tasks.push(payload.task);
         },
 
         updateTask: (state, {payload}: PayloadAction<TAddTaskAction>) => {
@@ -183,11 +184,41 @@ const boardsSlice = createSlice({
 
         setModalActive: (state, {payload}: PayloadAction<boolean>) => {
             state.modalActive = payload;
+        },
+
+        sort: (state, {payload}: PayloadAction<TSortAction>) => {
+            const board = state.boardArray.find(
+                board => board.boardId === payload.boardId
+            )
+            if(!board) return;
+
+            // 같은 리스트 내에서 순서만 변경
+            if(payload.droppableIdStart === payload.droppableIdEnd){
+                const list = board.lists.find(
+                    list => list.listId === payload.droppableIdStart
+                )
+                if(!list) return;
+                const [movedTask] = list.tasks.splice(payload.droppableIndexStart, 1);
+                list.tasks.splice(payload.droppableIndexEnd, 0, movedTask);
+                return;
+            }
+
+            // 다른 리스트로 이동
+            const listStart = board.lists.find(
+                list => list.listId === payload.droppableIdStart
+            )
+            const listEnd = board.lists.find(
+                list => list.listId === payload.droppableIdEnd
+            )
+            if(!listStart || !listEnd) return;
+
+            const [movedTask] = listStart.tasks.splice(payload.droppableIndexStart, 1);
+            listEnd.tasks.splice(payload.droppableIndexEnd, 0, movedTask);
         }
 
 
     }
 })
 
-export const {addBoard, deleteBoard,deleteList, deleteTask, updateTask, setModalActive, addTask, addList} = boardsSlice.actions;
+export const {addBoard, deleteBoard, deleteList, deleteTask, updateTask, setModalActive, addTask, addList, sort} = boardsSlice.actions;
 export const boardsReducer = boardsSlice.reducer;
